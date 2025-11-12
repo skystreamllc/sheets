@@ -397,6 +397,7 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
       newColumn++;
     } else if (e.key === 'Enter') {
       // При нажатии Enter переходим в режим редактирования
+      e.preventDefault();
       const key = getCellKey(selectedCell.row, selectedCell.column);
       const cell = cells[key];
       setEditingCell({ row: selectedCell.row, column: selectedCell.column });
@@ -404,6 +405,7 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
       return;
     } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // При вводе символа переходим в режим редактирования
+      e.preventDefault();
       setEditingCell({ row: selectedCell.row, column: selectedCell.column });
       setEditValue(e.key);
       return;

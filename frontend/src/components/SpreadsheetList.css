@@ -1,0 +1,86 @@
+.spreadsheet-list {
+  width: 250px;
+  background-color: white;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.spreadsheet-list h2 {
+  padding: 1rem;
+  font-size: 1.1rem;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.spreadsheet-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.spreadsheet-list li {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.spreadsheet-list li:hover {
+  background-color: #f5f5f5;
+}
+
+.spreadsheet-list li.active {
+  background-color: #e3f2fd;
+  border-left: 3px solid #667eea;
+}
+
+.spreadsheet-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+.spreadsheet-name:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.spreadsheet-name-input {
+  flex: 1;
+  border: 2px solid #667eea;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: inherit;
+  font-family: inherit;
+  background-color: white;
+  outline: none;
+  min-width: 0;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.spreadsheet-list li:hover .btn-delete {
+  opacity: 1;
+}
+
+.btn-delete:hover {
+  color: #f44336;
+}
+

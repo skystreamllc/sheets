@@ -15,6 +15,11 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
+# Удаляем старые контейнеры, если они есть
+echo "🧹 Очистка старых контейнеров..."
+docker-compose down -v 2>/dev/null || true
+docker rm -f $(docker ps -aq --filter "name=sheets") 2>/dev/null || true
+
 echo "🔨 Сборка Docker образа..."
 docker-compose build
 
@@ -24,7 +29,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "🚀 Запуск контейнера..."
-docker-compose up -d
+docker-compose up -d --force-recreate
 
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка при запуске контейнера!"

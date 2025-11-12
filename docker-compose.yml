@@ -10,7 +10,6 @@ services:
       - "3000:3000"
     volumes:
       # Монтируем базу данных для сохранения данных
-      - ./data:/app/data
       - ./db.sqlite3:/app/db.sqlite3
     environment:
       - DEBUG=False

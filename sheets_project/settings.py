@@ -147,7 +147,14 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.1.91:3000",
+    "http://sheets.letatel.keenetic.pro",
+    "https://sheets.letatel.keenetic.pro",
 ]
+
+# Разрешить все локальные IP адреса для разработки
+# В продакшене используйте конкретные адреса
+CORS_ALLOW_ALL_ORIGINS = True  # Для разработки - разрешить все источники
 
 CORS_ALLOW_CREDENTIALS = True
 

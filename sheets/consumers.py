@@ -103,10 +103,16 @@ class SpreadsheetConsumer(AsyncWebsocketConsumer):
         formula = data.get('formula', '')
         style = data.get('style', {})
 
-        # Сохраняем изменения в БД
-        await self.save_cell_update(sheet_id, row, column, value, formula, style)
+        # Сохраняем изменения в БД и получаем обновленную ячейку с вычисленным значением
+        cell = await self.save_cell_update(sheet_id, row, column, value, formula, style)
+        
+        if not cell:
+            return
 
-        # Рассылаем обновление всем пользователям в группе
+        # Пересчитываем зависимые ячейки
+        dependent_cells = await self.recalculate_dependent_cells(sheet_id, row, column)
+
+        # Рассылаем обновление измененной ячейки всем пользователям в группе
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -116,11 +122,28 @@ class SpreadsheetConsumer(AsyncWebsocketConsumer):
                 'sheet_id': sheet_id,
                 'row': row,
                 'column': column,
-                'value': value,
-                'formula': formula,
-                'style': style,
+                'value': cell.value,  # Используем вычисленное значение
+                'formula': cell.formula,
+                'style': cell.style or {},
             }
         )
+        
+        # Рассылаем обновления зависимых ячеек
+        for dep_cell in dependent_cells:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'cell_updated',
+                    'user_id': self.user.id,
+                    'username': self.user.username,
+                    'sheet_id': sheet_id,
+                    'row': dep_cell.row,
+                    'column': dep_cell.column,
+                    'value': dep_cell.value,
+                    'formula': dep_cell.formula,
+                    'style': dep_cell.style or {},
+                }
+            )
 
     @database_sync_to_async
     def get_user(self, user_id):
@@ -179,6 +202,30 @@ class SpreadsheetConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error saving cell update: {e}")
             return None
+    
+    @database_sync_to_async
+    def recalculate_dependent_cells(self, sheet_id, row, column):
+        """Пересчитывает зависимые ячейки после изменения значения"""
+        try:
+            sheet = Sheet.objects.get(id=sheet_id)
+            from .cell_dependencies import find_dependent_cells
+            from .formula_engine import FormulaEngine
+            
+            dependent_cells = find_dependent_cells(sheet, row, column)
+            engine = FormulaEngine(sheet)
+            
+            for cell in dependent_cells:
+                try:
+                    cell.value = engine.evaluate(cell.formula)
+                    cell.save()
+                except Exception as e:
+                    cell.value = f'#ОШИБКА: {str(e)}'
+                    cell.save()
+            
+            return dependent_cells
+        except Exception as e:
+            print(f"Error recalculating dependent cells: {e}")
+            return []
 
     # Обработчики сообщений для группы
 
@@ -188,6 +235,8 @@ class SpreadsheetConsumer(AsyncWebsocketConsumer):
         if event['user_id'] != self.user.id:
             await self.send(text_data=json.dumps({
                 'type': 'cell_update',
+                'user_id': event['user_id'],
+                'username': event['username'],
                 'sheet_id': event['sheet_id'],
                 'row': event['row'],
                 'column': event['column'],

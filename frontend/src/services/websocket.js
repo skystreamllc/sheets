@@ -8,9 +8,13 @@ class WebSocketService {
 
   connect(spreadsheetId, token) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Используем тот же хост, что и для API
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-    const host = apiUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // Используем тот же хост и порт, что и для фронтенда
+    // WebSocket будет проксироваться через тот же порт
+    const host = window.location.host; // включает hostname:port
+    
+    // Для WebSocket нужно использовать тот же протокол и хост
+    // В разработке: ws://localhost:3000/ws/... (проксируется на 8000)
+    // В продакшене: ws://sheets.letatel.keenetic.pro/ws/... (проксируется на 8000)
     const wsUrl = `${protocol}//${host}/ws/spreadsheet/${spreadsheetId}/?token=${token}`;
     
     this.ws = new WebSocket(wsUrl);

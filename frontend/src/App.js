@@ -21,9 +21,11 @@ function App() {
       api.getCurrentUser()
         .then(userData => {
           setUser(userData);
+          localStorage.setItem('current_user', JSON.stringify(userData));
         })
         .catch(() => {
           api.setAuthToken(null);
+          localStorage.removeItem('current_user');
         })
         .finally(() => {
           setCheckingAuth(false);
@@ -71,6 +73,7 @@ function App() {
     setUser(null);
     setSpreadsheets([]);
     setCurrentSpreadsheet(null);
+    localStorage.removeItem('current_user');
   };
 
   if (checkingAuth) {

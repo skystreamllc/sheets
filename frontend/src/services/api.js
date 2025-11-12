@@ -1,6 +1,18 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+// Используем относительный путь для API - будет проксироваться через один порт
+// В разработке React dev server проксирует /api на localhost:8000
+// В продакшене nginx будет проксировать /api на backend
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Используем относительный путь - работает через один порт
+  return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,

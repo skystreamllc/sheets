@@ -152,7 +152,12 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
     const handleCellUpdate = (data) => {
       // Игнорируем собственные обновления
       const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-      if (data.user_id === currentUser.id) return;
+      if (data.user_id && data.user_id === currentUser.id) return;
+
+      // Проверяем, что обновление относится к текущему листу
+      if (data.sheet_id && currentSheet && data.sheet_id !== currentSheet.id) {
+        return;
+      }
 
       const key = `${data.row}_${data.column}`;
       setCells(prev => ({
@@ -160,11 +165,20 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
         [key]: {
           row: data.row,
           column: data.column,
-          value: data.value,
-          formula: data.formula,
+          value: data.value || '',
+          formula: data.formula || '',
           style: data.style || {},
         }
       }));
+      
+      // Если изменилось значение (не формула), перезагружаем все ячейки,
+      // чтобы обновить зависимые формулы
+      if (!data.formula && data.value) {
+        // Небольшая задержка, чтобы дать серверу время пересчитать зависимости
+        setTimeout(() => {
+          loadCells();
+        }, 200);
+      }
     };
 
     const handleUserJoined = (data) => {

@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  sheets:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sheets-app
+    ports:
+      - "3000:3000"
+    volumes:
+      # Монтируем базу данных для сохранения данных
+      - ./data:/app/data
+      - ./db.sqlite3:/app/db.sqlite3
+    environment:
+      - DEBUG=False
+      - ALLOWED_HOSTS=*
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

@@ -52,6 +52,9 @@ class FormulaEngine:
         # Обработка ссылок на ячейки (A1, B2, etc.)
         formula = self._replace_cell_references(formula)
         
+        # Обработка процентов (20% -> 0.2, 100 * 20% -> 100 * 0.2)
+        formula = self._process_percentages(formula)
+        
         # Базовые математические операции
         try:
             # Безопасное вычисление
@@ -165,6 +168,23 @@ class FormulaEngine:
         # Исключаем ссылки внутри функций с диапазонами
         pattern = r'(?<!:)[A-Z]+[0-9]+(?![0-9:])'
         return re.sub(pattern, replace_ref, formula, flags=re.IGNORECASE)
+    
+    def _process_percentages(self, formula):
+        """Обрабатывает проценты в формуле (20% -> 0.2, 100 * 20% -> 100 * 0.2)"""
+        def replace_percent(match):
+            """Заменяет число% на число/100"""
+            number_str = match.group(1)
+            try:
+                number = float(number_str)
+                return f"({number} / 100)"
+            except ValueError:
+                return match.group(0)  # Если не число, возвращаем как есть
+        
+        # Паттерн для процентов: число% (может быть с десятичной точкой, может быть отрицательным)
+        # Примеры: 20%, 15.5%, -10%, 0.5%
+        # Исключаем случаи, когда % уже обработан или является частью другого выражения
+        pattern = r'([-+]?\d+\.?\d*)\s*%'
+        return re.sub(pattern, replace_percent, formula)
     
     def _parse_cell_ref(self, ref):
         """Парсит ссылку на ячейку (A1) в координаты (row, column)"""

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ShareDialog.css';
 import api from '../services/api';
 
@@ -8,20 +8,21 @@ function ShareDialog({ spreadsheet, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (spreadsheet) {
-      loadSharedUsers();
-    }
-  }, [spreadsheet]);
-
-  const loadSharedUsers = async () => {
+  const loadSharedUsers = useCallback(async () => {
+    if (!spreadsheet) return;
     try {
       const data = await api.getSharedUsers(spreadsheet.id);
       setSharedUsers(data.users || []);
     } catch (err) {
       console.error('Ошибка загрузки пользователей:', err);
     }
-  };
+  }, [spreadsheet]);
+
+  useEffect(() => {
+    if (spreadsheet) {
+      loadSharedUsers();
+    }
+  }, [spreadsheet, loadSharedUsers]);
 
   const handleShare = async (e) => {
     e.preventDefault();

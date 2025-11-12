@@ -224,7 +224,7 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
       wsService.off('cursor_update', handleCursorUpdate);
       wsService.disconnect();
     };
-  }, [spreadsheet, currentSheet]);
+  }, [spreadsheet, currentSheet, loadCells]);
 
   const handleCellChange = async (row, column, value, formula = '', style = null) => {
     if (!currentSheet) return;

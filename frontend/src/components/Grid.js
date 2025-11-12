@@ -4,7 +4,7 @@ import './Grid.css';
 const ROWS = 100;
 const COLS = 26;
 
-function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCursors = {}, onCursorMove }) {
+function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCursors = {}, onCursorMove, currentSheet, allSheets = [] }) {
   const [selectedCell, setSelectedCell] = useState({ row: 1, column: 1 });
   const [selectionRange, setSelectionRange] = useState(null); // { start: {row, column}, end: {row, column} }
   const [editingCell, setEditingCell] = useState(null);
@@ -15,6 +15,7 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
   const gridRef = useRef(null);
   const inputRef = useRef(null);
   const isClickingCell = useRef(false);
+  const editingSheetRef = useRef(null); // Сохраняем лист, на котором началось редактирование
   
   const colors = [
     '#FFFFFF', '#FFEBEE', '#FCE4EC', '#F3E5F5', '#E8EAF6',
@@ -44,6 +45,14 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
       inputRef.current.focus();
     }
   }, [editingCell]);
+
+  // При смене листа во время редактирования сохраняем режим редактирования
+  // но обновляем editingSheetRef, если он еще не установлен
+  useEffect(() => {
+    if (editingCell && currentSheet && !editingSheetRef.current) {
+      editingSheetRef.current = currentSheet;
+    }
+  }, [editingCell, currentSheet]);
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -134,6 +143,7 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
     // Переходим в режим редактирования выбранной ячейки
     if (selectedCell) {
       setEditingCell({ row: selectedCell.row, column: selectedCell.column });
+      editingSheetRef.current = currentSheet;
       setEditValue(formula);
       setShowFormulaMenu(false);
       
@@ -252,7 +262,16 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
   const handleCellClick = (row, column, e) => {
     // Если мы в режиме редактирования, добавляем ссылку на ячейку в формулу
     if (editingCell) {
-      const cellRef = getCellReference(row, column);
+      let cellRef = getCellReference(row, column);
+      
+      // Проверяем, находится ли кликнутая ячейка на другом листе
+      // Если редактирование началось на другом листе, добавляем имя текущего листа
+      if (editingSheetRef.current && currentSheet && 
+          editingSheetRef.current.id !== currentSheet.id) {
+        // Ячейка на другом листе - добавляем имя листа
+        cellRef = `${currentSheet.name}!${cellRef}`;
+      }
+      
       // Добавляем ссылку на ячейку в текущее значение формулы
       const currentValue = editValue || '';
       // Если формула уже начинается с =, просто добавляем ссылку
@@ -292,6 +311,8 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
     const key = getCellKey(row, column);
     const cell = cells[key];
     setEditingCell({ row, column });
+    // Сохраняем лист, на котором началось редактирование
+    editingSheetRef.current = currentSheet;
     // Показываем формулу, если она есть, иначе значение
     setEditValue(cell?.formula || cell?.value || '');
   };
@@ -318,6 +339,7 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
       
       setEditingCell(null);
       setEditValue('');
+      editingSheetRef.current = null;
     }
   };
 
@@ -331,6 +353,7 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
     } else if (e.key === 'Escape') {
       setEditingCell(null);
       setEditValue('');
+      editingSheetRef.current = null;
     } else if (e.key === 'Tab') {
       e.preventDefault();
       handleInputBlur();
@@ -401,12 +424,14 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
       const key = getCellKey(selectedCell.row, selectedCell.column);
       const cell = cells[key];
       setEditingCell({ row: selectedCell.row, column: selectedCell.column });
+      editingSheetRef.current = currentSheet;
       setEditValue(cell?.formula || cell?.value || '');
       return;
     } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       // При вводе символа переходим в режим редактирования
       e.preventDefault();
       setEditingCell({ row: selectedCell.row, column: selectedCell.column });
+      editingSheetRef.current = currentSheet;
       setEditValue(e.key);
       return;
     } else {

@@ -380,6 +380,8 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
             canUndo={historyIndex > 0}
             canRedo={historyIndex < history.length - 1}
             remoteCursors={remoteCursors}
+            currentSheet={currentSheet}
+            allSheets={sheets}
             onCursorMove={(row, column) => {
               wsService.send({
                 type: 'cursor_move',

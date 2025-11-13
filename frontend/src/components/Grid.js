@@ -42,8 +42,6 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
     { name: 'Вычитание', description: 'A1-B1', template: '=A1-B1' },
     { name: 'Умножение', description: 'A1*B1', template: '=A1*B1' },
     { name: 'Деление', description: 'A1/B1', template: '=A1/B1' },
-    { name: 'Процент от числа', description: '100*20%', template: '=100*20%' },
-    { name: 'Процент от ячейки', description: 'A1*15%', template: '=A1*15%' },
   ];
 
   useEffect(() => {

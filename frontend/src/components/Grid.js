@@ -369,23 +369,52 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
       return;
     }
     
-    // Если редактируем через строку формул и кликаем на ячейку, выходим из режима редактирования
+    // Если редактируем через строку формул и кликаем на ячейку, добавляем ссылку на ячейку в формулу
     if (editingCell && editingFromFormulaBarRef.current) {
-      // Сохраняем значение из строки формул
-      const value = (formulaBarRef.current?.value || '').trim();
-      if (value && value !== '=') {
-        const { row: editRow, column: editColumn } = editingCell;
-        if (value.startsWith('=')) {
-          onCellChange(editRow, editColumn, '', value);
-        } else {
-          onCellChange(editRow, editColumn, value, '');
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Убеждаемся, что editingSheetRef установлен
+      if (!editingSheetRef.current && currentSheet) {
+        editingSheetRef.current = currentSheet;
+      }
+      
+      let cellRef = getCellReference(row, column);
+      
+      // Проверяем, находится ли кликнутая ячейка на другом листе
+      if (editingSheetRef.current && currentSheet) {
+        if (editingSheetRef.current.id !== currentSheet.id) {
+          // Ячейка на другом листе - добавляем имя листа
+          cellRef = `${currentSheet.name}!${cellRef}`;
         }
       }
-      setEditingCell(null);
-      setEditValue('');
-      editingSheetRef.current = null;
-      editingFromFormulaBarRef.current = false;
-      setIsEditingFromFormulaBar(false);
+      
+      // Получаем текущее значение из строки формул
+      const currentValue = formulaBarValue || editValue || '';
+      let newValue;
+      // Если формула уже начинается с =, просто добавляем ссылку
+      if (currentValue.startsWith('=')) {
+        newValue = currentValue + cellRef;
+      } else {
+        // Если нет =, добавляем = и ссылку
+        newValue = '=' + cellRef;
+      }
+      
+      setEditValue(newValue);
+      setFormulaBarValue(newValue);
+      // Обновляем выделение, но остаемся в режиме редактирования
+      setSelectedCell({ row, column });
+      setSelectionRange(null);
+      // Фокусируемся обратно на строку формул
+      setTimeout(() => {
+        if (formulaBarRef.current) {
+          formulaBarRef.current.focus();
+          // Перемещаем курсор в конец
+          const length = formulaBarRef.current.value.length;
+          formulaBarRef.current.setSelectionRange(length, length);
+        }
+      }, 10);
+      return;
     }
     
     // Если не в режиме редактирования, просто выделяем ячейку
@@ -541,11 +570,37 @@ function Grid({ cells, onCellChange, onUndo, onRedo, canUndo, canRedo, remoteCur
   const handleFormulaBarKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleFormulaBarBlur();
-      setIsEditingFromFormulaBar(false);
-      if (selectedCell.row < ROWS) {
+      
+      // Сохраняем формулу немедленно
+      if (editingCell) {
+        const { row, column } = editingCell;
+        const value = (formulaBarRef.current?.value || formulaBarValue || '').trim();
+        
+        // Сохраняем значение, если оно не пустое и не только =
+        if (value && value !== '=') {
+          if (value.startsWith('=')) {
+            onCellChange(row, column, '', value);
+          } else {
+            onCellChange(row, column, value, '');
+          }
+        } else if (!value) {
+          // Если значение пустое, очищаем ячейку
+          onCellChange(row, column, '', '');
+        }
+        
+        setEditingCell(null);
+        setEditValue('');
+        setFormulaBarValue('');
+        editingSheetRef.current = null;
+        editingFromFormulaBarRef.current = false;
+        setIsEditingFromFormulaBar(false);
+      }
+      
+      // Перемещаемся на следующую строку
+      if (selectedCell && selectedCell.row < ROWS) {
         setSelectedCell({ row: selectedCell.row + 1, column: selectedCell.column });
       }
+      
       // Фокусируемся обратно на таблицу
       if (gridRef.current) {
         gridRef.current.focus();

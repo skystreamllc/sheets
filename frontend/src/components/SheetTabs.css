@@ -68,3 +68,26 @@
   background-color: #e0e0e0;
 }
 
+.tab-delete {
+  margin-left: 0.5rem;
+  padding: 0 0.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #999;
+  line-height: 1;
+  border-radius: 2px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.tab-delete:hover {
+  background-color: #ff4444;
+  color: white;
+}
+

@@ -108,6 +108,10 @@ const apiService = {
     return response.data;
   },
 
+  async deleteSheet(sheetId) {
+    await api.delete(`/sheets/${sheetId}/`);
+  },
+
   // Cells
   async getCells(sheetId) {
     const response = await api.get(`/cells/?sheet_id=${sheetId}`);

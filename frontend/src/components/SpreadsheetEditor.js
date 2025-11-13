@@ -6,7 +6,7 @@ import ShareDialog from './ShareDialog';
 import api from '../services/api';
 import wsService from '../services/websocket';
 
-function SpreadsheetEditor({ spreadsheet, onUpdate }) {
+function SpreadsheetEditor({ spreadsheet, onUpdate, onShareClick }) {
   const [sheets, setSheets] = useState([]);
   const [currentSheet, setCurrentSheet] = useState(null);
   const [cells, setCells] = useState({});
@@ -22,6 +22,21 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
   const [activeUsers, setActiveUsers] = useState([]);
   const [remoteCursors, setRemoteCursors] = useState({});
   const [showShareDialog, setShowShareDialog] = useState(false);
+  
+  // Передаем функцию открытия диалога в родительский компонент
+  useEffect(() => {
+    if (onShareClick) {
+      onShareClick(() => {
+        setShowShareDialog(true);
+      });
+    }
+    // Очищаем функцию при размонтировании
+    return () => {
+      if (onShareClick) {
+        onShareClick(null);
+      }
+    };
+  }, [onShareClick]);
 
   const loadSheets = useCallback(async () => {
     if (!spreadsheet) return;
@@ -248,7 +263,11 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
     const key = `${row}_${column}`;
     const updateData = {};
     
-    if (formula) {
+    // Если и value, и formula пустые, явно очищаем оба
+    if (value === '' && formula === '') {
+      updateData.value = '';
+      updateData.formula = '';
+    } else if (formula) {
       updateData.formula = formula;
     } else {
       updateData.value = value;
@@ -288,6 +307,35 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
       setCurrentSheet(newSheet);
     } catch (error) {
       console.error('Ошибка добавления листа:', error);
+    }
+  };
+
+  const handleDeleteSheet = async (sheetId) => {
+    try {
+      await api.deleteSheet(sheetId);
+      const updatedSheets = sheets.filter(sheet => sheet.id !== sheetId);
+      setSheets(updatedSheets);
+      
+      // Если удалили текущий лист, переключаемся на другой
+      if (currentSheet?.id === sheetId) {
+        if (updatedSheets.length > 0) {
+          setCurrentSheet(updatedSheets[0]);
+        } else {
+          // Если это был последний лист, создаем новый
+          const newSheet = await api.addSheet(spreadsheet.id, 'Лист1');
+          setSheets([newSheet]);
+          setCurrentSheet(newSheet);
+        }
+      }
+      
+      // Перезагружаем листы для синхронизации
+      await loadSheets();
+    } catch (error) {
+      console.error('Ошибка удаления листа:', error);
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.detail || 
+                          'Не удалось удалить лист. Возможно, это последний лист в таблице.';
+      alert(errorMessage);
     }
   };
 
@@ -344,14 +392,8 @@ function SpreadsheetEditor({ spreadsheet, onUpdate }) {
             onSelect={setCurrentSheet}
             onAdd={handleAddSheet}
             onUpdate={loadSheets}
+            onDelete={handleDeleteSheet}
           />
-          <button
-            className="share-btn"
-            onClick={() => setShowShareDialog(true)}
-            title="Предоставить доступ"
-          >
-            👥 Поделиться
-          </button>
         </div>
       </div>
       

@@ -31,29 +31,38 @@ function Login({ onLogin }) {
   return (
     <div className="login-container">
       <div className="login-box">
-        <h2>{isLogin ? 'Вход' : 'Регистрация'}</h2>
+        <h1>{isLogin ? 'Вход' : 'Регистрация'}</h1>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
+            id="username"
+            name="username"
             placeholder="Имя пользователя"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
+            autoComplete="username"
           />
           {!isLogin && (
             <input
               type="email"
+              id="email"
+              name="email"
               placeholder="Email (необязательно)"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
             />
           )}
           <input
             type="password"
+            id="password"
+            name="password"
             placeholder="Пароль"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
           {error && <div className="error">{error}</div>}
           <button type="submit">{isLogin ? 'Войти' : 'Зарегистрироваться'}</button>

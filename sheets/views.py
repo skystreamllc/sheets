@@ -172,6 +172,20 @@ class SheetViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(spreadsheet_id=spreadsheet_id)
         return queryset
 
+    def destroy(self, request, *args, **kwargs):
+        """Удаление листа с проверкой, что это не последний лист"""
+        sheet = self.get_object()
+        spreadsheet = sheet.spreadsheet
+        
+        # Проверяем, что это не последний лист
+        if spreadsheet.sheets.count() <= 1:
+            return Response(
+                {'error': 'Нельзя удалить последний лист в таблице'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return super().destroy(request, *args, **kwargs)
+
 
 class CellViewSet(viewsets.ModelViewSet):
     queryset = Cell.objects.all()

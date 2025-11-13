@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './SheetTabs.css';
 import api from '../services/api';
 
-function SheetTabs({ sheets, currentSheet, onSelect, onAdd, onUpdate }) {
+function SheetTabs({ sheets, currentSheet, onSelect, onAdd, onUpdate, onDelete }) {
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState('');
 
@@ -38,6 +38,15 @@ function SheetTabs({ sheets, currentSheet, onSelect, onAdd, onUpdate }) {
     }
   };
 
+  const handleDelete = async (e, sheet) => {
+    e.stopPropagation();
+    if (window.confirm(`Удалить лист "${sheet.name}"?`)) {
+      if (onDelete) {
+        await onDelete(sheet.id);
+      }
+    }
+  };
+
   return (
     <div className="sheet-tabs">
       <div className="tabs-container">
@@ -64,11 +73,28 @@ function SheetTabs({ sheets, currentSheet, onSelect, onAdd, onUpdate }) {
                 autoFocus
               />
             ) : (
-              <span className="tab-name">{sheet.name}</span>
+              <>
+                <span className="tab-name">{sheet.name}</span>
+                {sheets.length > 1 && (
+                  <button
+                    className="tab-delete"
+                    onClick={(e) => handleDelete(e, sheet)}
+                    title="Удалить лист"
+                    aria-label="Удалить лист"
+                  >
+                    ×
+                  </button>
+                )}
+              </>
             )}
           </div>
         ))}
-        <button className="tab-add" onClick={onAdd}>
+        <button 
+          className="tab-add" 
+          onClick={onAdd}
+          title="Добавить новый лист"
+          aria-label="Добавить новый лист"
+        >
           +
         </button>
       </div>

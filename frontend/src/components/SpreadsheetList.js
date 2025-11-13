@@ -79,6 +79,8 @@ function SpreadsheetList({ spreadsheets, currentSpreadsheet, onSelect, onDelete,
                   onDelete(spreadsheet.id);
                 }
               }}
+              title={`Удалить таблицу "${spreadsheet.name}"`}
+              aria-label={`Удалить таблицу "${spreadsheet.name}"`}
             >
               ×
             </button>

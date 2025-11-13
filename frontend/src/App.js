@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import SpreadsheetList from './components/SpreadsheetList';
 import SpreadsheetEditor from './components/SpreadsheetEditor';
@@ -12,6 +12,7 @@ function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [user, setUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const openShareDialogRef = useRef(null);
 
   useEffect(() => {
     // Проверяем, есть ли сохраненный токен
@@ -118,12 +119,26 @@ function App() {
             className="btn btn-icon"
             onClick={() => setSidebarVisible(!sidebarVisible)}
             title={sidebarVisible ? 'Скрыть панель таблиц' : 'Показать панель таблиц'}
+            aria-label={sidebarVisible ? 'Скрыть панель таблиц' : 'Показать панель таблиц'}
           >
             ☰
           </button>
           <h1>📊 Sheets</h1>
         </div>
         <div className="header-right">
+          {currentSpreadsheet && (
+            <button 
+              className="btn btn-secondary"
+              onClick={() => {
+                if (openShareDialogRef.current) {
+                  openShareDialogRef.current();
+                }
+              }}
+              title="Предоставить доступ"
+            >
+              👥 Поделиться
+            </button>
+          )}
           <span className="user-name">{user.username}</span>
           <button 
             className="btn btn-secondary"
@@ -155,6 +170,9 @@ function App() {
           <SpreadsheetEditor
             spreadsheet={currentSpreadsheet}
             onUpdate={loadSpreadsheets}
+            onShareClick={(fn) => {
+              openShareDialogRef.current = fn;
+            }}
           />
         )}
       </div>

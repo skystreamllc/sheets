@@ -25,6 +25,16 @@ function Grid({
   const [showFormulaMenu, setShowFormulaMenu] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [isEditingFromFormulaBar, setIsEditingFromFormulaBar] = useState(false);
+  const [columnWidths, setColumnWidths] = useState(() => {
+    const widths = {};
+    for (let i = 1; i <= COLS; i++) {
+      widths[i] = 100;
+    }
+    return widths;
+  });
+  const [resizingColumn, setResizingColumn] = useState(null);
+  const [resizeStartX, setResizeStartX] = useState(0);
+  const [resizeStartWidth, setResizeStartWidth] = useState(0);
 
   const gridRef = useRef(null);
   const inputRef = useRef(null);
@@ -102,10 +112,47 @@ function Grid({
 
   // Drag selection
   useEffect(() => {
-    const handleMouseUp = () => setIsSelecting(false);
+    const handleMouseUp = () => {
+      setIsSelecting(false);
+      if (resizingColumn !== null) {
+        setResizingColumn(null);
+      }
+    };
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, []);
+  }, [resizingColumn]);
+
+  // Column resize
+  useEffect(() => {
+    if (resizingColumn === null) return;
+
+    const handleMouseMove = (e) => {
+      const diff = e.clientX - resizeStartX;
+      const newWidth = Math.max(50, resizeStartWidth + diff);
+      setColumnWidths(prev => ({
+        ...prev,
+        [resizingColumn]: newWidth
+      }));
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [resizingColumn, resizeStartX, resizeStartWidth]);
+
+  const handleResizeStart = (column, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingColumn(column);
+    setResizeStartX(e.clientX);
+    setResizeStartWidth(columnWidths[column]);
+  };
 
   const getCellKey = (row, column) => `${row}_${column}`;
 
@@ -525,9 +572,18 @@ function Grid({
         <div className="grid-wrapper">
           <div className="grid-header">
             <div className="header-corner" />
-            {Array.from({ length: COLS }, (_, i) => (
-              <div key={i} className="header-cell">{columnToLetter(i + 1)}</div>
-            ))}
+            {Array.from({ length: COLS }, (_, i) => {
+              const col = i + 1;
+              return (
+                <div key={i} className="header-cell-wrapper" style={{ width: columnWidths[col] }}>
+                  <div className="header-cell">{columnToLetter(col)}</div>
+                  <div
+                    className="header-resize-handle"
+                    onMouseDown={(e) => handleResizeStart(col, e)}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {Array.from({ length: ROWS }, (_, ri) => {
@@ -547,7 +603,7 @@ function Grid({
                     <div
                       key={col}
                       className={`cell ${isCellInSelection(row, col) ? 'selected' : ''}`}
-                      style={getCellStyle(row, col)}
+                      style={{ ...getCellStyle(row, col), width: columnWidths[col] }}
                       onMouseDown={e => handleCellMouseDown(row, col, e)}
                       onMouseEnter={() => handleCellMouseEnter(row, col)}
                       onClick={e => { e.stopPropagation(); handleCellClick(row, col, e); }}
